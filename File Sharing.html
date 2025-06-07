@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>✨ Cosmic File Share</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      color: white;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated background particles */
+    .bg-particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      animation: float 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    header {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-weight: 600;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
+      to { box-shadow: 0 0 30px rgba(255, 255, 255, 0.4); }
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 3.5rem;
+      font-weight: 900;
+      margin: 60px 0 40px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease infinite;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .card:hover::before {
+      left: 100%;
+    }
+
+    .card:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .upload-area {
+      border: 3px dashed rgba(255, 255, 255, 0.4);
+      padding: 40px;
+      text-align: center;
+      border-radius: 20px;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+      position: relative;
+    }
+
+    .upload-area.dragover {
+      border-color: #4ecdc4;
+      background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(255, 107, 107, 0.2));
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(78, 205, 196, 0.5);
+    }
+
+    .upload-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      60% { transform: translateY(-10px); }
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-input-label {
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.3s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .file-input-label:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(45deg, #ff5252, #26a69a);
+    }
+
+    .file-list {
+      margin-top: 20px;
+    }
+
+    .file-item {
+      background: rgba(255, 255, 255, 0.1);
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transform: translateX(-100px);
+      opacity: 0;
+      animation: slideInFile 0.5s ease forwards;
+      border-left: 4px solid #4ecdc4;
+    }
+
+    @keyframes slideInFile {
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .file-icon {
+      font-size: 1.5rem;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .button {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .button:hover::before {
+      left: 100%;
+    }
+
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .button:active {
+      transform: translateY(-1px);
+    }
+
+    .qr-section {
+      text-align: center;
+      grid-column: span 2;
+    }
+
+    .qr-canvas {
+      margin: 20px 0;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.5s ease;
+    }
+
+    .qr-canvas.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .devices-list {
+      list-style: none;
+    }
+
+    .device-item {
+      background: rgba(255, 255, 255, 0.1);
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateX(100px);
+      animation: slideInDevice 0.5s ease forwards;
+    }
+
+    .device-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(10px);
+    }
+
+    @keyframes slideInDevice {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .history-list {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: linear-gradient(90deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      border-left: 3px solid #ff6b6b;
+      opacity: 0;
+      animation: fadeInHistory 0.5s ease forwards;
+    }
+
+    @keyframes fadeInHistory {
+      to { opacity: 1; }
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      font-size: 1.8rem;
+      animation: rotateIcon 3s linear infinite;
+    }
+
+    @keyframes rotateIcon {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      border-radius: 10px;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+      
+      .qr-section {
+        grid-column: span 1;
+      }
+      
+      .main-title {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header id="clock">Loading time...</header>
+
+  <!-- Animated background particles -->
+  <div class="bg-particles"></div>
+
+  <div class="container">
+    <h1 class="main-title">🚀 Cosmic File Share</h1>
+
+    <div class="grid-layout">
+      <!-- Upload Section -->
+      <div class="card">
+        <div class="section-title">
+          <span class="section-icon">📤</span>
+          Upload Files
+        </div>
+        <div class="upload-area" id="upload-area">
+          <div class="upload-icon">☁️</div>
+          <p style="margin-bottom: 15px; font-size: 1.1rem;">Drag & drop files here</p>
+          <label for="fileInput" class="file-input-label">
+            ✨ Choose Files
+          </label>
+          <input type="file" id="fileInput" class="file-input" multiple />
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+
+      <!-- Devices Section -->
+      <div class="card">
+        <div class="section-title">
+          <span class="section-icon">📡</span>
+          Nearby Devices
+        </div>
+        <button class="button" onclick="scanDevices()">
+          🔄 Scan for Devices
+        </button>
+        <ul class="devices-list" id="deviceList">
+          <li class="device-item">🔍 Click scan to find devices</li>
+        </ul>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="card qr-section">
+        <div class="section-title">
+          <span class="section-icon">📱</span>
+          Quick Connect
+        </div>
+        <button class="button" onclick="generateQR()">
+          ✨ Generate QR Code
+        </button>
+        <div>
+          <canvas id="qrCanvas" class="qr-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="card">
+        <div class="section-title">
+          <span class="section-icon">📜</span>
+          Transfer History
+        </div>
+        <ul class="history-list" id="historyList">
+          <li class="history-item">No transfers yet - start sharing!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    // Initialize elements
+    const clock = document.getElementById("clock");
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
+    const uploadArea = document.getElementById("upload-area");
+    const historyList = document.getElementById("historyList");
+    const deviceList = document.getElementById("deviceList");
+
+    // Create animated background particles
+    function createParticles() {
+      const particleContainer = document.querySelector('.bg-particles');
+      for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'bg-particle';
+        particle.style.width = Math.random() * 20 + 5 + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+        particleContainer.appendChild(particle);
+      }
+    }
+
+    // Update clock with colorful animation
+    function updateClock() {
+      const now = new Date().toLocaleString("en-LK", { 
+        timeZone: "Asia/Colombo",
+        hour12: true,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      clock.textContent = `🕐 ${now}`;
+    }
+
+    // File handling with animations
+    function handleFiles(files) {
+      if (fileList.children.length === 0) {
+        fileList.innerHTML = '';
+      }
+
+      Array.from(files).forEach((file, index) => {
+        setTimeout(() => {
+          const fileItem = document.createElement("div");
+          fileItem.className = "file-item";
+          fileItem.style.animationDelay = index * 0.1 + 's';
+          
+          const fileIcon = getFileIcon(file.type);
+          const fileSize = (file.size / 1024).toFixed(1);
+          
+          fileItem.innerHTML = `
+            <span class="file-icon">${fileIcon}</span>
+            <div>
+              <div style="font-weight: 600;">${file.name}</div>
+              <div style="font-size: 0.8rem; opacity: 0.8;">${fileSize} KB</div>
+            </div>
+          `;
+          
+          fileList.appendChild(fileItem);
+
+          // Add to history
+          addToHistory(`📤 Uploaded: ${file.name}`);
+        }, index * 100);
+      });
+    }
+
+    // Get appropriate file icon
+    function getFileIcon(fileType) {
+      if (fileType.startsWith('image/')) return '🖼️';
+      if (fileType.startsWith('video/')) return '🎥';
+      if (fileType.startsWith('audio/')) return '🎵';
+      if (fileType.includes('pdf')) return '📄';
+      if (fileType.includes('text')) return '📝';
+      if (fileType.includes('zip') || fileType.includes('archive')) return '🗜️';
+      return '📎';
+    }
+
+    // Add item to history with animation
+    function addToHistory(text) {
+      if (historyList.children.length === 1 && historyList.children[0].textContent.includes('No transfers')) {
+        historyList.innerHTML = '';
+      }
+
+      const historyItem = document.createElement("li");
+      historyItem.className = "history-item";
+      historyItem.textContent = `${text} @ ${new Date().toLocaleTimeString()}`;
+      historyList.insertBefore(historyItem, historyList.firstChild);
+
+      // Keep only last 10 items
+      if (historyList.children.length > 10) {
+        historyList.removeChild(historyList.lastChild);
+      }
+    }
+
+    // Event listeners
+    fileInput.addEventListener("change", (e) => {
+      handleFiles(e.target.files);
+    });
+
+    uploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadArea.classList.add("dragover");
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+      uploadArea.classList.remove("dragover");
+    });
+
+    uploadArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove("dragover");
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Generate QR Code with animation
+    function generateQR() {
+      const ip = location.host;
+      const url = `${location.protocol}//${ip}`;
+      
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      
+      const canvas = document.getElementById("qrCanvas");
+      const ctx = canvas.getContext('2d');
+      
+      const modules = qr.getModuleCount();
+      const cellSize = 8;
+      canvas.width = canvas.height = modules * cellSize;
+      
+      // Create gradient background
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = gradient;
+      for (let row = 0; row < modules; row++) {
+        for (let col = 0; col < modules; col++) {
+          if (qr.isDark(row, col)) {
+            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+      
+      canvas.classList.add('show');
+      addToHistory('📱 QR Code generated');
+    }
+
+    // Scan for devices with animation
+    function scanDevices() {
+      const simulatedDevices = [
+        { name: "Lahiru's iPhone 15", icon: "📱", status: "online" },
+        { name: "MacBook Pro", icon: "💻", status: "online" },
+        { name: "iPad Air", icon: "📱", status: "away" },
+        { name: "Gaming PC", icon: "🖥️", status: "online" },
+        { name: "Samsung Galaxy", icon: "📱", status: "online" }
+      ];
+
+      deviceList.innerHTML = '';
+      
+      simulatedDevices.forEach((device, index) => {
+        setTimeout(() => {
+          const deviceItem = document.createElement("li");
+          deviceItem.className = "device-item";
+          deviceItem.style.animationDelay = index * 0.1 + 's';
+          
+          const statusColor = device.status === 'online' ? '🟢' : '🟡';
+          deviceItem.innerHTML = `
+            <span>${device.icon}</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">${device.name}</div>
+              <div style="font-size: 0.8rem; opacity: 0.8;">${statusColor} ${device.status}</div>
+            </div>
+          `;
+          
+          deviceItem.addEventListener('click', () => {
+            addToHistory(`🔗 Connected to ${device.name}`);
+            deviceItem.style.background = 'rgba(78, 205, 196, 0.2)';
+          });
+          
+          deviceList.appendChild(deviceItem);
+        }, index * 150);
+      });
+
+      addToHistory('🔍 Device scan completed');
+    }
+
+    // Initialize
+    setInterval(updateClock, 1000);
+    updateClock();
+    createParticles();
+
+    // Add some initial animation on load
+    setTimeout(() => {
+      const cards = document.querySelectorAll('.card');
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(50px)';
+          card.style.transition = 'all 0.6s ease';
+          
+          setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+          }, 100);
+        }, index * 200);
+      });
+    }, 500);
+  </script>
+</body>
+</html>
